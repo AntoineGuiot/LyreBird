@@ -150,14 +150,13 @@ def sample(sess, T):
     prev_x[0, 0, 0] = 1
     strokes = np.zeros((T, 3), dtype=np.float32)
     for i in range(T):
-        [pi_,
-         mu1_,
+        [mu1_,
          mu2_,
          sigma1_,
          sigma2_,
          corr_,
          eos_,
-         next_state] = sess.run([pi, mu1, mu2, sigma1, sigma2, corr, eos, final_state],
+         next_state] = sess.run([mu1, mu2, sigma1, sigma2, corr, eos, final_state],
                                 feed_dict={input_data: prev_x, state_in: prev_state}
                                 )
 
