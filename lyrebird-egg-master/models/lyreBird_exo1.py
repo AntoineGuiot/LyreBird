@@ -15,14 +15,14 @@ lstm_size = 100
 lstm_sizes = [lstm_size]
 nb_mixture = 12
 batch_size = 10
-len_sequence = 300
+T = 300 # = corresponding to the number of point in a stroke
 
 
 def model_inputs():
     input_data = tf.placeholder(dtype=tf.float32,
                                 shape=[None, None, 3], name="input_data")
     target_data = tf.placeholder(dtype=tf.float32,
-                                 shape=[None, len_sequence, 3], name='target_data')
+                                 shape=[None, T, 3], name='target_data')
     return input_data, target_data
 
 
@@ -133,12 +133,12 @@ def launch_train(epoch, nb_batch):
                          })
             print(' epoch n°' + str(e)+ ' batch n°' + str(b) + ' cost = '+ str(cost_))
 
-        save_cost[e] = cost_  # *(batch_size*len_sequence)
+        save_cost[e] = cost_
 
     plt.plot(save_cost)
     return sess
 
-def sample(sess, len_sequence):
+def sample(sess, T):
     prev_state = sess.run(cell.zero_state(1, tf.float32))
     def random_gaussian_2d(mu1, mu2, s1, s2, rho):
         mean = [mu1, mu2]
@@ -148,8 +148,8 @@ def sample(sess, len_sequence):
 
     prev_x = np.zeros((1, 1, 3), dtype=np.float32)
     prev_x[0, 0, 0] = 1
-    strokes = np.zeros((len_sequence, 3), dtype=np.float32)
-    for i in range(len_sequence):
+    strokes = np.zeros((T, 3), dtype=np.float32)
+    for i in range(T):
         [pi_,
          mu1_,
          mu2_,

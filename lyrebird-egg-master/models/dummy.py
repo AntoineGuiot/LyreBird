@@ -9,7 +9,7 @@ lstm_size = 100
 lstm_sizes = [lstm_size]
 nb_mixture = 12
 batch_size = 1
-len_sequence = 300
+T = 300 # = corresponding to the number of point in a stroke
 learning_rate = 0.05
 epoch = 10
 nb_batch = 10
@@ -19,7 +19,7 @@ def create_and_train():
         input_data = tf.placeholder(dtype=tf.float32,
                                     shape=[None, None, 3], name="input_data")
         target_data = tf.placeholder(dtype=tf.float32,
-                                     shape=[None, len_sequence, 3], name='target_data')
+                                     shape=[None, T, 3], name='target_data')
         return input_data, target_data
 
     def build_lstm_layers(lstm_sizes, X, batch_size):
@@ -117,7 +117,7 @@ def create_and_train():
                                            })
                 print(' epoch n°' + str(e) + ' batch n°' + str(b) + ' cost = ' + str(cost_))
 
-            save_cost[e] = cost_  # *(batch_size*len_sequence)
+            save_cost[e] = cost_
 
         plt.plot(save_cost)
         return sess
@@ -127,7 +127,7 @@ def create_and_train():
 sess, cell, mu1, mu2, sigma1, sigma2, corr, eos, final_state, input_data, state_in = create_and_train()
 
 def generate_unconditionally(random_seed=1):
-    def generate_stroke(sess, len_sequence):
+    def generate_stroke(sess, T):
         prev_state = sess.run(cell.zero_state(1, tf.float32))
 
         def random_gaussian_2d(mu1, mu2, sigma1, sigma2, corr):
@@ -138,8 +138,8 @@ def generate_unconditionally(random_seed=1):
 
         prev_x = np.zeros((1, 1, 3), dtype=np.float32)
         prev_x[0, 0, 0] = 1
-        strokes = np.zeros((len_sequence, 3), dtype=np.float32)
-        for i in range(len_sequence):
+        strokes = np.zeros((T, 3), dtype=np.float32)
+        for i in range(T):
             [mu1_, mu2_, sigma1_, sigma2_,
              corr_, eos_, next_state] = sess.run([mu1, mu2, sigma1, sigma2, corr, eos, final_state],
                                     feed_dict={input_data: prev_x, state_in: prev_state}
@@ -160,7 +160,7 @@ def generate_unconditionally(random_seed=1):
             prev_state = next_state
         return strokes
 
-    stroke = generate_stroke(sess, len_sequence)
+    stroke = generate_stroke(sess, T)
     return stroke
 
 
