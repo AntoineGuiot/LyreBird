@@ -36,7 +36,7 @@ def get_one_hot(text, char_list):
 def model_inputs():
     input_data = tf.placeholder(dtype=tf.float32, shape=[None, None, 3], name="input_data")
     target_data = tf.placeholder(dtype=tf.float32, shape=[None, None, 3], name='target_data')
-    char_seq = tf.placeholder(dtype=tf.float32, shape=[None, len_text, char_vec_len])
+    char_seq = tf.placeholder(dtype=tf.float32, shape=[None, len_text, char_vec_len]) # matrix representing the sentence
     return input_data, target_data, char_seq
 
 
@@ -59,7 +59,7 @@ def get_K_gaussian_Coef(output, kappa_prev):
     output = tf.exp(tf.reshape(output, [-1, 3 * K, 1]))
     alpha_hat, beta_hat, kappa_hat = tf.split(axis=1, num_or_size_splits=3, value=output[:, :])
     alpha = tf.exp(alpha_hat)
-    alpha = tf.clip_by_value(alpha, 0, 1e20)
+    alpha = tf.clip_by_value(alpha, 0, 1e20)# make sure alpha, beta, kappa != inf
     beta = tf.exp(beta_hat)
     beta = tf.clip_by_value(beta, 0, 1e20)
     kappa = kappa_prev + tf.exp(kappa_hat)
@@ -102,12 +102,6 @@ def get_mixture_coef(output):
     pi, mu1, mu2, sigma1, sigma2, corr = tf.split(axis=1, num_or_size_splits=6, value=output[:, 1:])
     eos = tf.sigmoid(eos)
     pi = tf.nn.softmax(pi)
-    #max_pi = tf.reduce_max(pi, 1, keepdims=True)
-    #pi = tf.subtract(pi, max_pi)
-    #pi = tf.exp(pi)
-    #normalize_pi = tf.reciprocal(tf.reduce_sum(pi, 1, keepdims=True))
-    #pi = tf.multiply(normalize_pi, pi)
-    sigma1 = tf.exp(sigma1)
     sigma2 = tf.exp(sigma2)
     corr = tf.tanh(corr)
     corr = tf.clip_by_value(corr, -0.99999, 0.99999)  # Make sure denom > O
@@ -145,7 +139,7 @@ kappa_prev = init_kappa
 w_prev = char_seq[:, 0, :]
 reuse = False
 initial_state1, lstm1_output, final_state1, lstm1, input = build_lstm1_layers(input_data, batch_size)
-for i in range(len(lstm1_output)):
+for i in range(len(lstm1_output)): # concat input, window and lstm1_output before the second lstm layer
     k_mixtures_input = get_K_mixtures_input(lstm1_output[i], reuse)
     [alpha, beta, new_kappa] = get_K_gaussian_Coef(k_mixtures_input, kappa_prev)
     window, phi = get_window(alpha, beta, new_kappa, char_seq)
@@ -157,8 +151,7 @@ for i in range(len(lstm1_output)):
 
 initial_state2, lstm2_output, final_state2, lstm2 = build_lstm2_layers(lstm1_output, batch_size)
 
-lstm2_output = tf.reshape(
-       tf.concat(axis=1, values=lstm2_output), [-1, size])
+lstm2_output = tf.reshape(tf.concat(axis=1, values=lstm2_output), [-1, size])
 
 mdn_mixtures_input = get_mdn_mixtures_input(lstm2_output)
 
